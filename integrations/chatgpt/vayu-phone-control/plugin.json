@@ -1,0 +1,24 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "vayu-phone-control",
+  "version": "0.1.0",
+  "description": "Use the existing V.A.Y.U Android relay for explicit screenshots, UI inspection, taps, swipes, typing and app navigation. Requires the user’s connected phone, running tunnel and private relay token.",
+  "author": {
+    "name": "ACE BUILDS"
+  },
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "VAYU Phone Control",
+        "shortDescription": "Control your Android phone",
+        "longDescription": "Connect to your own V.A.Y.U relay to observe screenshots and UI elements, open apps and web URLs, and perform explicit touch, typing and navigation commands. This connection uses your existing bearer token. It does not run a separate AI model. This test connection depends on a temporary Cloudflare tunnel remaining online; its address changes when restarted.",
+        "developerName": "ACE BUILDS",
+        "category": "Productivity",
+        "capabilities": [],
+        "defaultPrompt": "List my connected VAYU phones, then show the current screen.",
+        "logo": "./assets/icon.png",
+        "composerIcon": "./assets/icon.png"
+      }
+    }
+  }
+}
