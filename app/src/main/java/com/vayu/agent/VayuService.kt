@@ -154,19 +154,8 @@ class VayuService : AccessibilityService() {
     //  DIRECT ACTION EXECUTION
     // ════════════════════════════════════════════════
 
-    suspend fun executeDirectAction(action: String, x: Int, y: Int, x2: Int, y2: Int, text: String, @Suppress("UNUSED_PARAMETER") duration: Long = 0L) {
-        val agentAction = AgentAction(
-            action = action.uppercase(),
-            x = x, y = y,
-            x2 = x2, y2 = y2,
-            text = text,
-            duration = duration
-        )
-        try {
-            executeAction(agentAction)
-        } catch (e: Exception) {
-            throw e
-        }
+    suspend fun executeDirectAction(action: AgentAction) {
+        executeAction(action)
     }
 
     suspend fun findAndTapTextPublic(query: String): UiActionResult {

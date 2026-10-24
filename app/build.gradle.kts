@@ -11,13 +11,20 @@ android {
         applicationId = "com.vayu.agent"
         minSdk = 30
         targetSdk = 34
-        versionCode = 14
-        versionName = "11.0-controller"
+        versionCode = 15
+        versionName = "11.1-controller"
 
 
     }
 
     signingConfigs {
+        // Stable test certificate across local and CI builds. Never use for production.
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         create("release") {
             // Codemagic will inject CM_KEYSTORE_PATH, CM_KEY_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD
             val ksPath = System.getenv("CM_KEYSTORE_PATH")
@@ -63,6 +70,7 @@ android {
 }
 
 dependencies {
+    testImplementation("junit:junit:4.13.2")
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")

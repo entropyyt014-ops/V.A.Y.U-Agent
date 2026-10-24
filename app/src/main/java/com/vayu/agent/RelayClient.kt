@@ -105,7 +105,6 @@ object RelayClient {
     }
     private suspend fun execute(svc: VayuService, cmd: JsonObject): Map<String, Any?> {
         fun str(key: String) = cmd.get(key)?.asString ?: ""
-        fun int(key: String) = cmd.get(key)?.asInt ?: 0
         val type = str("type")
         if (type == "status") return mapOf("success" to true, "mode" to "direct-control", "androidVersion" to Build.VERSION.RELEASE)
         if (type == "list_apps") {
@@ -117,9 +116,7 @@ object RelayClient {
         withContext(Dispatchers.Main) {
             when (type) {
                 "tap", "long_press", "swipe", "type_text", "press_back", "press_home", "press_recents", "open_app" -> {
-                    val action = when (type) { "type_text" -> "TYPE"; else -> type.uppercase() }
-                    svc.executeDirectAction(action, int("x"), int("y"), int("x2"), int("y2"),
-                        if (type == "open_app") str("app") else str("text"), cmd.get("duration")?.asLong ?: 400L)
+                    svc.executeDirectAction(decodeDirectAction(cmd))
                 }
                 "open_url" -> {
                     val uri = Uri.parse(str("url"))
