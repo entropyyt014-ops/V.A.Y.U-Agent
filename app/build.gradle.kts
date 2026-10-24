@@ -1,6 +1,3 @@
-import java.util.Properties
-import java.io.FileInputStream
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -12,20 +9,12 @@ android {
 
     defaultConfig {
         applicationId = "com.vayu.agent"
-        minSdk = 28
+        minSdk = 30
         targetSdk = 34
-        versionCode = 13
-        versionName = "10.0"
+        versionCode = 14
+        versionName = "11.0-controller"
 
-        val localProperties = Properties()
-        val localPropertiesFile = rootProject.file("local.properties")
-        if (localPropertiesFile.exists()) {
-            localProperties.load(FileInputStream(localPropertiesFile))
-        }
-        val apiKey = localProperties.getProperty("GEMINI_API_KEY")
-            ?: System.getenv("GEMINI_API_KEY")
-            ?: ""
-        buildConfigField("String", "GEMINI_API_KEY", "\"$apiKey\"")
+
     }
 
     signingConfigs {

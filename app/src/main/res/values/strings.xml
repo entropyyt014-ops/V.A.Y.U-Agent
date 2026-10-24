@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">V.A.Y.U Agent</string>
-    <string name="accessibility_desc">V.A.Y.U AI Agent — Vision-Assisted Yonder Unit. Needed to observe and control the screen autonomously.</string>
+    <string name="app_name">V.A.Y.U Controller</string>
+    <string name="accessibility_desc">Allows the connected MCP client to see screenshots and visible UI, tap, swipe and enter text. Enable only when you want remote phone control. Disconnect in V.A.Y.U to stop.</string>
 </resources>

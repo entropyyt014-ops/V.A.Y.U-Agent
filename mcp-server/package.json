@@ -1,21 +1,7 @@
 {
-  "name": "vayu-mcp-server",
-  "version": "4.0.0",
-  "description": "V.A.Y.U MCP Server — Control your V.A.Y.U Android agent from Claude Desktop, Cursor, or any MCP client via HTTP long-polling relay",
-  "main": "index.js",
-  "bin": {
-    "vayu-mcp-server": "./index.js"
-  },
-  "scripts": {
-    "start": "node index.js"
-  },
-  "keywords": ["mcp", "vayu", "android", "agent", "claude", "cursor"],
-  "author": "Rinku Sharma",
-  "license": "MIT",
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  }
+  "name": "vayu-mcp-server", "version": "11.0.0", "private": true,
+  "description": "Optional stdio adapter for the direct-control relay",
+  "main": "index.js", "scripts": { "start": "node index.js" },
+  "engines": { "node": ">=20" },
+  "dependencies": { "@modelcontextprotocol/sdk": "1.29.0" }
 }
