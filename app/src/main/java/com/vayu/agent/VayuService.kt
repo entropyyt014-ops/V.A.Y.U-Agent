@@ -41,7 +41,7 @@ class VayuService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
-    override fun onInterrupt() {}
+    override fun onInterrupt() { RelayClient.disconnect() }
 
     override fun onUnbind(intent: Intent?): Boolean {
         RelayClient.disconnect()
@@ -86,14 +86,12 @@ class VayuService : AccessibilityService() {
                             }
                             if (hwBitmap == null) {
                                 Log.e(TAG, "wrapHardwareBuffer returned null")
-                                result.hardwareBuffer.close()
                                 if (cont.isActive) cont.resume(null)
                                 return
                             }
 
                             val bitmap = hwBitmap.copy(Bitmap.Config.ARGB_8888, false)
                             hwBitmap.recycle()
-                            result.hardwareBuffer.close()
 
                             if (bitmap == null) {
                                 Log.e(TAG, "Failed to copy hardware bitmap")
@@ -232,13 +230,7 @@ class VayuService : AccessibilityService() {
     }
 
     private fun findFocusedNode(root: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
-        if (root == null) return null
-        if (root.isAccessibilityFocused || root.isFocused) return root
-        for (i in 0 until root.childCount) {
-            val found = findFocusedNode(root.getChild(i))
-            if (found != null) return found
-        }
-        return null
+        return root?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)?.takeIf { it.isEditable }
     }
 
     private fun findAnyEditableNode(root: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
@@ -350,88 +342,30 @@ class VayuService : AccessibilityService() {
 
                     delay(300)
 
-                    val node = findNodeAt(rootInActiveWindow, action.x, action.y)
-                    var typed = false
-
-                    val isWebViewField = isInsideWebView(node)
-
-                    if (isWebViewField) {
-                        val focusedNode = findFocusedNode(rootInActiveWindow) ?: node
-
-                        if (focusedNode != null) {
-                            focusedNode.performAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, Bundle().apply {
-                                putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, 0)
-                                putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT, focusedNode.text?.length ?: 0)
-                            })
-                            delay(50)
-                            focusedNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {
-                                putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "")
-                            })
-                            delay(80)
-                        }
-
+                    val root = rootInActiveWindow
+                    val hit = findNodeAt(root, action.x, action.y)
+                    val focused = findFocusedNode(root)
+                    val target = hit?.takeIf { it.isEditable } ?: focused?.takeIf {
+                        val bounds = android.graphics.Rect()
+                        it.getBoundsInScreen(bounds)
+                        bounds.contains(action.x, action.y)
+                    } ?: error("No editable field at the requested coordinates")
+                    val args = Bundle().apply {
+                        putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, action.text)
+                    }
+                    var typed = target.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
+                    if (!typed && action.text.isNotEmpty()) {
+                        val length = target.text?.length ?: 0
+                        val selected = length == 0 || target.performAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, Bundle().apply {
+                            putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, 0)
+                            putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT, length)
+                        })
+                        check(selected) { "Cannot replace existing field contents" }
                         val clip = android.content.ClipData.newPlainText("vayu", action.text)
-                        (getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager)
-                            .setPrimaryClip(clip)
-
-                        val targetNode = focusedNode ?: node
-                        if (targetNode != null) {
-                            val pasteResult = targetNode.performAction(AccessibilityNodeInfo.ACTION_PASTE)
-                            if (pasteResult) {
-                                typed = true
-                            }
-                        }
-
-                        if (!typed && node != null && node !== targetNode) {
-                            val pasteResult = node.performAction(AccessibilityNodeInfo.ACTION_PASTE)
-                            if (pasteResult) {
-                                typed = true
-                            }
-                        }
-
-                        if (!typed && node != null && node.isEditable) {
-                            val args = Bundle().apply {
-                                putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, action.text)
-                            }
-                            val result = node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
-                            if (result) {
-                                typed = true
-                            }
-                        }
-                    } else {
-                        if (node != null && node.isEditable) {
-                            val args = Bundle().apply {
-                                putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, action.text)
-                            }
-                            val result = node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
-                            if (result) {
-                                typed = true
-                            }
-                        }
-
-                        if (!typed) {
-                            val focusedNode = findFocusedNode(rootInActiveWindow)
-                            val clip = android.content.ClipData.newPlainText("vayu", action.text)
-                            (getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager)
-                                .setPrimaryClip(clip)
-
-                            val targetNode = focusedNode ?: node
-                            if (targetNode != null) {
-                                val pasteResult = targetNode.performAction(AccessibilityNodeInfo.ACTION_PASTE)
-                                if (pasteResult) {
-                                    typed = true
-                                }
-                            }
-
-                            if (!typed && node != null && node !== targetNode) {
-                                typed = node.performAction(AccessibilityNodeInfo.ACTION_PASTE)
-                            }
-                        }
+                        (getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(clip)
+                        typed = target.performAction(AccessibilityNodeInfo.ACTION_PASTE)
                     }
-
-                    if (!typed) {
-                        error("Text could not be entered")
-                    }
+                    check(typed) { "Text could not be entered" }
                 }
 
                 "OPEN_APP" -> {
@@ -482,16 +416,4 @@ class VayuService : AccessibilityService() {
         return if (root.isEditable || root.isClickable) root else null
     }
 
-    private fun isInsideWebView(node: AccessibilityNodeInfo?): Boolean {
-        if (node == null) return false
-        var current = node.parent
-        while (current != null) {
-            val className = current.className?.toString() ?: ""
-            if (className == "android.webkit.WebView" || className.contains("WebView")) {
-                return true
-            }
-            current = current.parent
-        }
-        return false
-    }
 }
