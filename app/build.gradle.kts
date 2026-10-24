@@ -1,6 +1,3 @@
-import java.util.Properties
-import java.io.FileInputStream
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -12,23 +9,22 @@ android {
 
     defaultConfig {
         applicationId = "com.vayu.agent"
-        minSdk = 28
+        minSdk = 30
         targetSdk = 34
-        versionCode = 13
-        versionName = "10.0"
+        versionCode = 15
+        versionName = "11.1-controller"
 
-        val localProperties = Properties()
-        val localPropertiesFile = rootProject.file("local.properties")
-        if (localPropertiesFile.exists()) {
-            localProperties.load(FileInputStream(localPropertiesFile))
-        }
-        val apiKey = localProperties.getProperty("GEMINI_API_KEY")
-            ?: System.getenv("GEMINI_API_KEY")
-            ?: ""
-        buildConfigField("String", "GEMINI_API_KEY", "\"$apiKey\"")
+
     }
 
     signingConfigs {
+        // Stable test certificate across local and CI builds. Never use for production.
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         create("release") {
             // Codemagic will inject CM_KEYSTORE_PATH, CM_KEY_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD
             val ksPath = System.getenv("CM_KEYSTORE_PATH")
@@ -56,7 +52,7 @@ android {
     }
 
     lint {
-        abortOnError = false
+        abortOnError = true
         checkReleaseBuilds = false
     }
 
@@ -74,6 +70,7 @@ android {
 }
 
 dependencies {
+    testImplementation("junit:junit:4.13.2")
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
